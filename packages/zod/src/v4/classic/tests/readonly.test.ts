@@ -76,6 +76,26 @@ test("object freezing", async () => {
   expect(Object.isFrozen(await z.promise(z.string()).readonly().parseAsync(Promise.resolve("a")))).toBe(true);
 });
 
+test("does not freeze the input on a failed parse", () => {
+  const input = { x: 1 };
+  const res = z.string().readonly().safeParse(input);
+  expect(res.success).toBe(false);
+  expect(Object.isFrozen(input)).toBe(false);
+});
+
+test("does not freeze the input on a failed async parse", async () => {
+  const input = { x: 1 };
+  const res = await z.string().readonly().safeParseAsync(input);
+  expect(res.success).toBe(false);
+  expect(Object.isFrozen(input)).toBe(false);
+});
+
+test("does not freeze a failed value that cannot be frozen", () => {
+  // Freezing a non-empty typed array throws, so a failed parse must not attempt it.
+  const res = z.array(z.number()).readonly().safeParse(new Uint8Array(1));
+  expect(res.success).toBe(false);
+});
+
 test("async object freezing", async () => {
   expect(Object.isFrozen(await z.array(z.string()).readonly().parseAsync(["a"]))).toBe(true);
   expect(Object.isFrozen(await z.tuple([z.string(), z.number()]).readonly().parseAsync(["a", 1]))).toBe(true);
